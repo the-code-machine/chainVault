@@ -2,7 +2,7 @@ import React, {use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import SidebarLinkGroup from './SidebarLinkGroup';
 import { Dashboard } from '@/components/data/Dashboard';
-import { useRouter } from 'next/router';
+import { useRouter } from "next/navigation";
  
 
 
