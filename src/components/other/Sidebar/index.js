@@ -1,7 +1,9 @@
-import React, {useEffect, useRef, useState } from 'react';
+import React, {use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import SidebarLinkGroup from './SidebarLinkGroup';
 import { Dashboard } from '@/components/data/Dashboard';
+import { useRouter } from 'next/router';
+ 
 
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
@@ -9,7 +11,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     links: ['/', '/dashboard/view-panel','/dashboard/control-panel', '/dashboard/upload-details'],
     title: ['Overview', 'View Panel','Control Panel', 'Upload Details'],
   }
-
+const router = useRouter();
  
   const trigger = useRef(null);
   const sidebar = useRef(null);
@@ -56,6 +58,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     }
   }, [sidebarExpanded]);
 
+  const home =()=>{
+    router.push('/')
+  }
   return (
     <aside
       ref={sidebar}
@@ -65,9 +70,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     >
       {/* <!-- SIDEBAR HEADER --> */}
       <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
-        <Link href="/">
-        <h1 className=' text-3xl text-white font-bold'>eVault</h1>
-        </Link>
+        
+        <h1 onClick={home} className=' cursor-pointer text-3xl text-white font-bold'>eVault</h1>
+      
 
         <button
           ref={trigger}
