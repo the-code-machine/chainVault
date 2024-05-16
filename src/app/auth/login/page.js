@@ -76,7 +76,7 @@ const Home = () => {
   return (
     <div className="rounded-sm border border-stroke  bg-white shadow-default">
       <div className="flex flex-wrap items-center ">
-        <div className="hidden w-full xl:block xl:w-1/2 h-screen">
+        <div className="hidden w-full xl:block xl:w-1/2 h-screen overflow-hidden">
           <div className="py-20 px-26 flex flex-col space-y-5 justify-center items-center text-center">
             <Link className="mb-5.5 inline-block" href="/">
            <h1 className=" text-4xl text-[#792938ed] font-bold">eVault</h1>
