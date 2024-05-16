@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { getTokenURI, mintDocumentNFT } from "@/controllers/mint";
-import Document from "@/models/documentModel";
-import Activity from "@/models/activityLogs";
 
 
 export default {
@@ -48,24 +45,3 @@ export async function POST(request) {
   }
 }
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const tokenIdString = searchParams.get("tokenId");
-
-  if (!tokenIdString || isNaN(parseInt(tokenIdString, 10))) {
-    return NextResponse.json({ error: "Invalid Token ID" }, { status: 400 });
-  }
-
-  const tokenId = parseInt(tokenIdString, 10);
-
-  try {
-    const uri = await getTokenURI(tokenId);
-    return NextResponse.json({ tokenUri: uri }, { status: 200 });
-  } catch (error) {
-    console.error("Error retrieving token URI:", error);
-    return NextResponse.json(
-      { error: `Error retrieving token URI: ${error.message}` },
-      { status: 500 }
-    );
-  }
-}
