@@ -4,11 +4,11 @@ import Document from "@/models/documentModel";
 import Activity from "@/models/activityLogs";
 
 
-export const config = {
+export default {
   api: {
-    bodyParser: false, // Required when handling file uploads
+    bodyParser: false,
   },
-};
+}
 
 export async function POST(request) {
   try {
