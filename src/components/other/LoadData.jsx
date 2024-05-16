@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Web3 from 'web3';
 export const LoadData = () => {
     const dispatch = useDispatch();  
-    const location = window.location
+    
     useEffect(() => {
       const checkMetaMaskLogin = async () => {
         try {
@@ -44,7 +44,7 @@ export const LoadData = () => {
     
       // Call the function to check MetaMask login status
       checkMetaMaskLogin();
-    }, [dispatch, setUser,location]);
+    }, [dispatch]);
   return (
     <div></div>
   )
