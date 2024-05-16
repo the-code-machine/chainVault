@@ -47,6 +47,7 @@ const Home = () => {
           const data = await response.json();
           const userData ={
             login:true,
+            address:address,
           }
           console.log(data); // Log the response from the backend
           setLoading(false);
