@@ -24,6 +24,7 @@ export async function POST(request) {
 
         // Create a new case
         const newCase = new CaseModal({
+
             caseNumber,
             title,
             courtName,

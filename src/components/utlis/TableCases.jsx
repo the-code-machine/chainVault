@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Loader from "./Loader";
 import { useAppSelector } from "@/redux/hooks";
-import { Link } from "react-scroll";
+import Link from "next/link";
 
 export default function TableCases() {
   const [cases, setCases] = useState([]);
@@ -94,7 +94,7 @@ export default function TableCases() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <Link
-                    href={`/case/${caseItem.caseNumber}`}
+                    href={`/case-management/case/${caseItem.caseNumber}`}
                     className="px-4 py-1.5 inline-flex text-md leading-5 font-semibold rounded-full bg-primary text-white"
                   >
                     View Case
