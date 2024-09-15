@@ -1,18 +1,20 @@
-import React, {use, useEffect, useRef, useState } from 'react';
+'use client'
+import React, { use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import SidebarLinkGroup from './SidebarLinkGroup';
 import { Dashboard } from '@/components/data/Dashboard';
-import { useRouter } from "next/navigation";
- 
+import { usePathname, useRouter } from "next/navigation";
+
 
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
-  const paths ={
-    links: ['/', '/dashboard/view-panel','/dashboard/control-panel', '/dashboard/upload-details'],
-    title: ['Overview', 'View Panel','Control Panel', 'Upload Details'],
+  const pathname = usePathname()
+  const paths = {
+    links: ['/', '/case-management/view-panel', '/case-management/control-panel', '/dashboard/upload-details'],
+    title: ['Overview', 'View Panel', 'Control Panel', 'Upload Details'],
   }
-const router = useRouter();
- 
+  const router = useRouter();
+
   const trigger = useRef(null);
   const sidebar = useRef(null);
 
@@ -22,7 +24,7 @@ const router = useRouter();
     storedSidebarExpanded === null ? false : storedSidebarExpanded === 'true'
   );
 
-  
+
   // close on click outside
   useEffect(() => {
     const clickHandler = ({ target }) => {
@@ -58,21 +60,20 @@ const router = useRouter();
     }
   }, [sidebarExpanded]);
 
-  const home =()=>{
+  const home = () => {
     router.push('/')
   }
   return (
     <aside
       ref={sidebar}
-      className={`absolute left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-primary duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}
+      className={`absolute left-0 top-0 z-[100] flex h-screen w-72.5 flex-col overflow-y-hidden bg-primary duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
     >
       {/* <!-- SIDEBAR HEADER --> */}
       <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
-        
+
         <h1 onClick={home} className=' cursor-pointer text-3xl text-white font-bold'>eVault</h1>
-      
+
 
         <button
           ref={trigger}
@@ -108,147 +109,60 @@ const router = useRouter();
             </h3>
 
             <ul className="mb-6 flex flex-col gap-1.5">
-              {/* <!-- Menu Item Dashboard --> */}
-              <SidebarLinkGroup
-                // activeCondition={
-                //   pathname === '/' || pathname.includes('dashboard')
-                // }
-              >
-                {(handleClick, open) => {
-                  return (
-                    <>
-                    {Dashboard.map((items, index) => (
-                    <React.Fragment>
-                      <Link
-                        href={items.href}
-                        className={`group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark text-white dark:hover:bg-meta-4 ${
-                          // (pathname === '/dashboard' ||
-                          //   pathname.includes('grading')|| pathname.includes('project')||pathname.includes('team') ||pathname.includes('upload-details') || pathname.includes('view-panel') || pathname.includes('control-panel')) &&
-                          'bg-graydark dark:bg-meta-4'
-                        }`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          sidebarExpanded
-                            ? handleClick()
-                            : setSidebarExpanded(true);
-                        }}
-                      >
-                        <svg
-                          className="fill-current"
-                          width="18"
-                          height="18"
-                          viewBox="0 0 18 18"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M6.10322 0.956299H2.53135C1.5751 0.956299 0.787598 1.7438 0.787598 2.70005V6.27192C0.787598 7.22817 1.5751 8.01567 2.53135 8.01567H6.10322C7.05947 8.01567 7.84697 7.22817 7.84697 6.27192V2.72817C7.8751 1.7438 7.0876 0.956299 6.10322 0.956299ZM6.60947 6.30005C6.60947 6.5813 6.38447 6.8063 6.10322 6.8063H2.53135C2.2501 6.8063 2.0251 6.5813 2.0251 6.30005V2.72817C2.0251 2.44692 2.2501 2.22192 2.53135 2.22192H6.10322C6.38447 2.22192 6.60947 2.44692 6.60947 2.72817V6.30005Z"
-                            fill=""
-                          />
-                          <path
-                            d="M15.4689 0.956299H11.8971C10.9408 0.956299 10.1533 1.7438 10.1533 2.70005V6.27192C10.1533 7.22817 10.9408 8.01567 11.8971 8.01567H15.4689C16.4252 8.01567 17.2127 7.22817 17.2127 6.27192V2.72817C17.2127 1.7438 16.4252 0.956299 15.4689 0.956299ZM15.9752 6.30005C15.9752 6.5813 15.7502 6.8063 15.4689 6.8063H11.8971C11.6158 6.8063 11.3908 6.5813 11.3908 6.30005V2.72817C11.3908 2.44692 11.6158 2.22192 11.8971 2.22192H15.4689C15.7502 2.22192 15.9752 2.44692 15.9752 2.72817V6.30005Z"
-                            fill=""
-                          />
-                          <path
-                            d="M6.10322 9.92822H2.53135C1.5751 9.92822 0.787598 10.7157 0.787598 11.672V15.2438C0.787598 16.2001 1.5751 16.9876 2.53135 16.9876H6.10322C7.05947 16.9876 7.84697 16.2001 7.84697 15.2438V11.7001C7.8751 10.7157 7.0876 9.92822 6.10322 9.92822ZM6.60947 15.272C6.60947 15.5532 6.38447 15.7782 6.10322 15.7782H2.53135C2.2501 15.7782 2.0251 15.5532 2.0251 15.272V11.7001C2.0251 11.4188 2.2501 11.1938 2.53135 11.1938H6.10322C6.38447 11.1938 6.60947 11.4188 6.60947 11.7001V15.272Z"
-                            fill=""
-                          />
-                          <path
-                            d="M15.4689 9.92822H11.8971C10.9408 9.92822 10.1533 10.7157 10.1533 11.672V15.2438C10.1533 16.2001 10.9408 16.9876 11.8971 16.9876H15.4689C16.4252 16.9876 17.2127 16.2001 17.2127 15.2438V11.7001C17.2127 10.7157 16.4252 9.92822 15.4689 9.92822ZM15.9752 15.272C15.9752 15.5532 15.7502 15.7782 15.4689 15.7782H11.8971C11.6158 15.7782 11.3908 15.5532 11.3908 15.272V11.7001C11.3908 11.4188 11.6158 11.1938 11.8971 11.1938H15.4689C15.7502 11.1938 15.9752 11.4188 15.9752 11.7001V15.272Z"
-                            fill=""
-                          />
-                        </svg>
-                        {items.name}
-                        <svg
-                          className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
-                            open && 'rotate-180'
-                          }`}
-                          width="20"
-                          height="20"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                            d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
-                            fill=""
-                          />
-                        </svg>
-                      </Link>
-                      {/* <!-- Dropdown Menu Start --> */}
-                      <div
-                        className={`translate transform overflow-hidden ${
-                          !open && 'hidden'
-                        }`}
-                      >
-                        <ul className="mt-4 mb-5.5 flex flex-col text-white gap-2.5 pl-6">
-                        {items.innerItems.map((Item, index) => (
-        <li key={index}>
-          <Link
-            href={Item.href}
-            className={({ isActive }) =>
-              'group relative flex items-center gap-2.5 rounded-md px-4 font-medium text-bodydark2 duration-300 ease-in-out text-white ' 
-             
-            }
-          >
-            {Item.name}
-          </Link>
-        </li>
-      ))}
-                         
-                        </ul>
-                      </div>
-                      {/* <!-- Dropdown Menu End --> */}
-                    </React.Fragment>))}</>
-                  );
-                }}
-              </SidebarLinkGroup>
-           
               <li>
                 <Link
-                  href={`/dashBoard/legalRecords/sharedDocuments`}
-                  className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-white text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                     'bg-graydark dark:bg-meta-4'
-                  }`}
+                  href="/case-management"
+                  className={`group relative flex items-center  gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${pathname.startsWith('/case-management') ?
+                    ' bg-white text-primary' : 'text-white bg-transparent'
+                    }`}
                 >
-                 <svg
-                    className="fill-current"
-                    width="18"
-                    height="19"
-                    viewBox="0 0 18 19"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <g clipPath="url(#clip0_130_9756)">
-                      <path
-                        d="M15.7501 0.55835H2.2501C1.29385 0.55835 0.506348 1.34585 0.506348 2.3021V15.8021C0.506348 16.7584 1.29385 17.574 2.27822 17.574H15.7782C16.7345 17.574 17.5501 16.7865 17.5501 15.8021V2.3021C17.522 1.34585 16.7063 0.55835 15.7501 0.55835ZM6.69385 10.599V6.4646H11.3063V10.5709H6.69385V10.599ZM11.3063 11.8646V16.3083H6.69385V11.8646H11.3063ZM1.77197 6.4646H5.45635V10.5709H1.77197V6.4646ZM12.572 6.4646H16.2563V10.5709H12.572V6.4646ZM2.2501 1.82397H15.7501C16.0313 1.82397 16.2563 2.04897 16.2563 2.33022V5.2271H1.77197V2.3021C1.77197 2.02085 1.96885 1.82397 2.2501 1.82397ZM1.77197 15.8021V11.8646H5.45635V16.3083H2.2501C1.96885 16.3083 1.77197 16.0834 1.77197 15.8021ZM15.7501 16.3083H12.572V11.8646H16.2563V15.8021C16.2563 16.0834 16.0313 16.3083 15.7501 16.3083Z"
-                        fill=""
-                      />
-                    </g>
-                    <defs>
-                      <clipPath id="clip0_130_9756">
-                        <rect
-                          width="18"
-                          height="18"
-                          fill="white"
-                          transform="translate(0 0.052124)"
-                        />
-                      </clipPath>
-                    </defs>
-                  </svg>
-                  Shared Documents
+                  <svg width="18px" height="18px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentcolor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <rect x="0" fill="none" width="24" height="24"></rect> <g> <path d="M21 14v5c0 1.105-.895 2-2 2H5c-1.105 0-2-.895-2-2V5c0-1.105.895-2 2-2h5v2H5v14h14v-5h2z"></path> <path d="M21 7h-4V3h-2v4h-4v2h4v4h2V9h4"></path> </g> </g></svg>
+                  Create New Case
                 </Link>
               </li>
-        
+              <li>
+                <Link
+                  href="/case-management/view-history"
+                  className={`group relative flex items-center text-white gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${pathname.startsWith('/case-management/view-history') ?
+                    ' bg-white text-primary' : 'text-white bg-transparent'
+                    }`}
+                >
+                  <svg width="18px" height="18px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#f5f5f5"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M3 5.67541V3C3 2.44772 2.55228 2 2 2C1.44772 2 1 2.44772 1 3V7C1 8.10457 1.89543 9 3 9H7C7.55229 9 8 8.55229 8 8C8 7.44772 7.55229 7 7 7H4.52186C4.54218 6.97505 4.56157 6.94914 4.57995 6.92229C5.621 5.40094 7.11009 4.22911 8.85191 3.57803C10.9074 2.80968 13.173 2.8196 15.2217 3.6059C17.2704 4.3922 18.9608 5.90061 19.9745 7.8469C20.9881 9.79319 21.2549 12.043 20.7247 14.1724C20.1945 16.3018 18.9039 18.1638 17.0959 19.4075C15.288 20.6513 13.0876 21.1909 10.9094 20.9247C8.73119 20.6586 6.72551 19.605 5.27028 17.9625C4.03713 16.5706 3.27139 14.8374 3.06527 13.0055C3.00352 12.4566 2.55674 12.0079 2.00446 12.0084C1.45217 12.0088 0.995668 12.4579 1.04626 13.0078C1.25994 15.3309 2.2082 17.5356 3.76666 19.2946C5.54703 21.3041 8.00084 22.5931 10.6657 22.9188C13.3306 23.2444 16.0226 22.5842 18.2345 21.0626C20.4464 19.541 22.0254 17.263 22.6741 14.6578C23.3228 12.0526 22.9963 9.30013 21.7562 6.91897C20.5161 4.53782 18.448 2.69239 15.9415 1.73041C13.4351 0.768419 10.6633 0.756291 8.14853 1.69631C6.06062 2.47676 4.26953 3.86881 3 5.67541Z" fill="#f5f5f5"></path> <path d="M12 5C11.4477 5 11 5.44771 11 6V12.4667C11 12.4667 11 12.7274 11.1267 12.9235C11.2115 13.0898 11.3437 13.2344 11.5174 13.3346L16.1372 16.0019C16.6155 16.278 17.2271 16.1141 17.5032 15.6358C17.7793 15.1575 17.6155 14.546 17.1372 14.2698L13 11.8812V6C13 5.44772 12.5523 5 12 5Z" fill="#f5f5f5"></path> </g></svg>
+                  View History
+                </Link>
+              </li>
+
               <li>
                 <Link
                   href="/dashBoard/settings"
-                  className={`group relative flex items-center text-white gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                    // pathname.includes('settings') &&
-                    'bg-graydark dark:bg-meta-4'
-                  }`}
+                  className={`group relative flex items-center text-white gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${pathname.startsWith('/case-management/personal-doc') ?
+                    ' bg-white text-primary' : 'text-white bg-transparent'
+                    }`}
+                >
+                  <svg width="18px" height="20px" viewBox="0 0 1024 1024" class="icon" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M826.660571 190.683429h-70.290285c-15.798857 0-27.867429-11.410286-27.867429-32.182858 0-20.772571 12.068571-33.28 27.867429-33.28h83.821714c27.867429 0 50.614857 22.674286 50.688 50.688V918.674286c0 27.867429-22.674286 50.614857-50.614857 50.614857H110.665143a50.688 50.688 0 0 1-50.688-50.614857V175.908571c0-28.013714 22.674286-50.688 50.688-50.688H203.337143c15.798857 0 29.915429 13.458286 29.915428 33.28s-14.116571 32.109714-29.915428 32.109715H126.390857v712.850285h697.344l2.925714-712.777142zM697.563429 396.434286H253.366857c-14.262857 0-25.746286-14.921143-25.746286-33.353143s11.483429-33.426286 25.746286-33.426286h444.196572c14.116571 0 25.673143 14.994286 25.673142 33.426286 0 18.358857-11.556571 33.353143-25.6 33.353143z m0 169.984H253.366857c-14.262857 0-25.746286-14.994286-25.746286-33.426286s11.483429-33.353143 25.746286-33.353143h444.196572c14.116571 0 25.673143 14.994286 25.673142 33.353143 0 18.432-11.556571 33.426286-25.6 33.426286z m0 169.910857H253.366857c-14.262857 0-25.746286-14.921143-25.746286-33.353143s11.483429-33.426286 25.746286-33.426286h444.196572c14.116571 0 25.673143 14.994286 25.673142 33.426286 0 18.358857-11.556571 33.353143-25.6 33.353143zM648.265143 124.342857c16.310857 0 32.768 10.459429 32.768 33.792 0 23.405714-15.213714 31.890286-32.768 31.890286H297.472c-16.384 0-27.648-15.36-27.648-31.890286 0-15.213714 13.531429-33.792 27.648-33.792h63.341714v-5.339428c0-59.465143 55.808-100.937143 114.249143-100.937143 58.368 0 109.860571 44.909714 109.860572 100.937143a45.348571 45.348571 0 0 1-0.365715 5.339428h63.707429z m-242.102857 0.512h127.195428C529.993143 84.845714 509.44 64.804571 471.771429 64.804571c-37.668571 0-59.538286 20.041143-65.682286 60.050286z" fill="#f8f7f7"></path></g></svg>
+                  Personal Docs
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashBoard/settings"
+                  className={`group relative flex items-center text-white gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${pathname.startsWith('/case-management/shared-docs') ?
+                    ' bg-white text-primary' : 'text-white bg-transparent'
+                    }`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 62 49" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M54.9 36.35L40.5 39.65C40.4 40.35 40.1 41.1 39.65 41.7C38.8 43 37.5 43.95 36 44.35C34.5 44.7 32.9 44.45 31.6 43.55L19.2 35.65C18.6 35.3 18.5 34.6 18.85 34.05C19.2 33.5 19.9 33.35 20.4 33.7L32.85 41.6C34.5 42.6 36.65 42.15 37.7 40.55C38.75 38.95 38.25 36.75 36.65 35.7L21.15 25.9C18.6 24.3 15.65 23.05 12.85 24.45L0 31.75V46.45L9.2 39.6C10.65 39.25 12.25 39.55 13.6 40.4L24.4 47.2C27.05 48.85 30.3 49.25 33.1 48.5L56.5 43.15C58.35 42.75 59.6 40.9 59.15 38.9C58.65 37.1 56.8 35.95 54.9 36.35ZM44.7 0C35.6 0 28.25 7.35 28.25 16.45C28.25 25.55 35.6 32.9 44.7 32.9C53.8 32.9 61.15 25.55 61.15 16.45C61.15 7.35 53.75 0 44.7 0ZM54.05 10.35L42.75 25.95L35.5 18.1C34.7 17.2 34.75 15.85 35.6 15C36.5 14.2 37.85 14.25 38.7 15.1L42.35 19.05L50.5 7.8C51.2 6.85 52.55 6.6 53.55 7.3C54.5 8 54.75 9.4 54.05 10.35Z" fill="white" />
+                  </svg>
+
+                  Shared Document
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashBoard/settings"
+                  className={`group relative flex items-center text-white gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${pathname.startsWith('/case-management/settings') ?
+                    ' bg-white text-primary' : 'text-white bg-transparent'
+                    }`}
                 >
                   <svg
                     className="fill-current"
@@ -282,15 +196,15 @@ const router = useRouter();
                   Settings
                 </Link>
               </li>
-              {/* <!-- Menu Item Settings --> */}
+
             </ul>
           </div>
 
-     {}
-        
-         
+          { }
 
-          
+
+
+
         </nav>
         {/* <!-- Sidebar Menu --> */}
       </div>

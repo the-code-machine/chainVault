@@ -2,9 +2,10 @@
 import { SET_USER, UPDATE_USER, LOGOUT } from './actionTypes';
 
 const initialState = {
+
     login: false,
     address: '',
-   
+
 };
 
 const userReducer = (state = initialState, action) => {
@@ -22,5 +23,7 @@ const userReducer = (state = initialState, action) => {
             return state;
     }
 };
+
+// Add more selectors as needed
 
 export default userReducer;

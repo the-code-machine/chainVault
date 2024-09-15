@@ -1,42 +1,42 @@
-export const NavbarItems =[
-   
+export const NavbarItems = [
+
     {
         name: 'About',
         href: 'about',
-       
+
     },
     {
         name: 'Features',
         href: 'features',
-       
+
     },
     {
-        name: 'Legal Records',  
-        href: '/dashBoard/legalRecords',
+        name: 'Case Managment',
+        href: '/case-management',
         innerItems: [
             {
-                name: 'Upload Documents',
-                href: '/dashBoard/legalRecords/uploadDocuments',
+                name: 'Create New Case',
+                href: '/case-management',
             },
             {
-                name: 'My Documents',
-                href: '/dashBoard/legalRecords/viewDocuments',
+                name: 'View History',
+                href: '/case-management/view-history',
             },
 
-           
+
         ]
-      
+
     },
     {
         name: 'Statics',
         href: '/statics',
-      
+
     },
     {
         name: 'Contact',
         href: 'contact',
-      
+
     },
-   
-    
+
+
 ]

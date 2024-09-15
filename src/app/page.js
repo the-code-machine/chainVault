@@ -6,22 +6,15 @@ import Footer from "@/components/other/Footer";
 import { Provider, useDispatch } from "react-redux";
 import store from "@/redux/store";
 import { setUser } from "@/redux/actions";
+import StoreProvider from "./StoreProvider";
 export default function Home() {
-  const dispatch = useDispatch(); 
-  useEffect(() => {
-  const userId = localStorage.getItem("userId");
-   const userData={
-    userId:userId
-   }
-    dispatch(setUser(userData));
-  },[dispatch])
   return (
-  <>
-  <Provider store={store}>
-  <Navbar/>
-  <HomeMain/>
-  <Footer/>
-  </Provider>
-  </>
+    <>
+
+      <Navbar />
+      <HomeMain />
+      <Footer />
+
+    </>
   );
 }

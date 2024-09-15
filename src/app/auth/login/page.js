@@ -11,10 +11,12 @@ import { setUser } from "@/redux/actions";
 import Loader from "@/components/utlis/Loader";
 import Web3 from 'web3';
 import { set } from "mongoose";
- 
+import { useAppDispatch } from "@/redux/hooks";
+import { setUserAddress, setUserLogin } from "@/redux/slicers/userSlice";
+
 const Home = () => {
-  const dispatch = useDispatch(); 
-  const[ loading,setLoading]= useState(false)
+  const dispatch = useAppDispatch()
+  const [loading, setLoading] = useState(false)
   const router = useRouter();
   const options = {
     animationData: groovyWalkAnimation,
@@ -24,36 +26,34 @@ const Home = () => {
 
   const handleMetaMaskSignIn = async (e) => {
     e.preventDefault();
-   
+
     setLoading(true);
     try {
       if (typeof window.ethereum !== 'undefined') {
         const web3 = new Web3(window.ethereum);
         await window.ethereum.enable(); // Request user's permission to connect
-  
+
         const accounts = await web3.eth.getAccounts();
         const address = accounts[0];
-        
+
         // Send address to backend API
         const response = await fetch('/api/users/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ ethreumAddress: address}),
+          body: JSON.stringify({ ethreumAddress: address }),
         });
-  
+
         if (response.ok) {
           const data = await response.json();
-          const userData ={
-            login:true,
-            address:address,
-          }
-          console.log(data); // Log the response from the backend
+
+
           setLoading(false);
-          dispatch(setUser(userData));
+          dispatch(setUserAddress(address));
+          dispatch(setUserLogin(true));
           toast.success("Login successful");
-          router.push("/"); 
+          router.push("/");
           // Optionally, you can perform further actions based on the response from the backend
         } else {
           // Handle non-successful response
@@ -71,22 +71,22 @@ const Home = () => {
       setLoading(false);
     }
   };
-  
-  
+
+
   return (
     <div className="rounded-sm border border-stroke  bg-white shadow-default">
       <div className="flex flex-wrap items-center ">
         <div className="hidden w-full xl:block xl:w-1/2 h-screen overflow-hidden">
           <div className="py-20 px-26 flex flex-col space-y-5 justify-center items-center text-center">
             <Link className="mb-5.5 inline-block" href="/">
-           <h1 className=" text-4xl text-[#792938ed] font-bold">eVault</h1>
+              <h1 className=" text-4xl text-[#792938ed] font-bold">eVault</h1>
             </Link>
             <p className="2xl:px-20 text-[#792938ed]">
               eVault is a decentralized platform that allows you to store your
               important documents on the blockchain securely.
             </p>
             <span className="mt-15 inline-block ">
-            {View}
+              {View}
             </span>
           </div>
         </div>
@@ -96,7 +96,7 @@ const Home = () => {
               SignIn to eVault
             </h2>
             <form>
-            
+
               <div className="mb-5">
                 <input
                   type="submit"
@@ -117,7 +117,7 @@ const Home = () => {
           </div>
         </div>
       </div>
-      { loading && <Loader/>}
+      {loading && <Loader />}
     </div>
   );
 };

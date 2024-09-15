@@ -10,7 +10,7 @@ import Loader from "@/components/utlis/Loader";
 import Web3 from "web3";
 
 const Home = () => {
-  const [loading,setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const router = useRouter();
   const options = {
     animationData: groovyWalkAnimation,
@@ -18,66 +18,67 @@ const Home = () => {
   }
   const { View } = useLottie(options);
   const [userName, setUserName] = React.useState('');
-;
-const handleMetaMaskSignUp = async (e) => {
-  e.preventDefault();
-  if(userName === "") {
-    toast.warn("Please enter your name");
-    return;}
- 
-  setLoading(true);
-  try {
-    if (typeof window.ethereum !== 'undefined') {
-      const web3 = new Web3(window.ethereum);
-      await window.ethereum.enable(); // Request user's permission to connect
+  ;
+  const handleMetaMaskSignUp = async (e) => {
+    e.preventDefault();
+    if (userName === "") {
+      toast.warn("Please enter your name");
+      return;
+    }
 
-      const accounts = await web3.eth.getAccounts();
-      const address = accounts[0];
-      
-      // Send address to backend API
-      const response = await fetch('/api/users/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ethreumAddress: address ,name : userName}),
-      });
+    setLoading(true);
+    try {
+      if (typeof window.ethereum !== 'undefined') {
+        const web3 = new Web3(window.ethereum);
+        await window.ethereum.enable(); // Request user's permission to connect
 
-      if (response.ok) {
-        const data = await response.json();
-        setLoading(false);
-        toast.success("Signup successful");
-        router.push("/auth/login"); 
-        // Optionally, you can perform further actions based on the response from the backend
+        const accounts = await web3.eth.getAccounts();
+        const address = accounts[0];
+
+        // Send address to backend API
+        const response = await fetch('/api/users/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ethreumAddress: address.toLowerCase(), name: userName }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setLoading(false);
+          toast.success("Signup successful");
+          router.push("/auth/login");
+          // Optionally, you can perform further actions based on the response from the backend
+        } else {
+          // Handle non-successful response
+          console.error('Failed to authenticate with MetaMask');
+          toast.error('Failed to authenticate with MetaMask');
+          setLoading(false);
+        }
       } else {
-        // Handle non-successful response
-        console.error('Failed to authenticate with MetaMask');
-        toast.error('Failed to authenticate with MetaMask');
+        toast.error("MetaMask not installed");
         setLoading(false);
       }
-    } else {
-      toast.error("MetaMask not installed");
+    } catch (error) {
+      console.error("MetaMask authentication error:", error);
+      toast.error("MetaMask authentication error");
       setLoading(false);
     }
-  } catch (error) {
-    console.error("MetaMask authentication error:", error);
-    toast.error("MetaMask authentication error");
-    setLoading(false);
-  }
-};
+  };
   return (
     <div className="rounded-sm border border-stroke  bg-white shadow-default overflow-y-hidden">
       <div className="flex flex-wrap items-center ">
         <div className="hidden w-full xl:block xl:w-1/2 h-screen overflow-hidden">
           <div className="py-20 px-26 flex flex-col space-y-5 justify-center items-center text-center">
             <Link className="mb-5.5 inline-block" href="/">
-           <h1 className=" text-4xl text-[#792938ed] font-bold">eVault</h1>
+              <h1 className=" text-4xl text-[#792938ed] font-bold">eVault</h1>
             </Link>
             <p className=" text-[#792938ed] w-11/12">
-            Experience the fusion of technology and security. With <span className="font-bold text-2xl ">BlockChain </span>encryption, we ensure your legal documents are safe. Trust us to guard your peace of mind..
+              Experience the fusion of technology and security. With <span className="font-bold text-2xl ">BlockChain </span>encryption, we ensure your legal documents are safe. Trust us to guard your peace of mind..
             </p>
             <span className="mt-15 inline-block ">
-            {View}
+              {View}
             </span>
           </div>
         </div>
@@ -125,7 +126,7 @@ const handleMetaMaskSignUp = async (e) => {
                   </span>
                 </div>
               </div>
-          
+
               <div className="mb-5">
                 <input
                   type="submit"
@@ -147,7 +148,7 @@ const handleMetaMaskSignUp = async (e) => {
           </div>
         </div>
       </div>
-      { loading && <Loader/>}
+      {loading && <Loader />}
     </div>
   );
 };
