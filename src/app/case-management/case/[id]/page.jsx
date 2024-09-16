@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Loader from "@/components/utlis/Loader";
 import { useAppSelector } from "@/redux/hooks";
+import Home from "../../case-management/uploadDocuments/page";
+import Table from "@/components/utlis/Table";
+import TableView from "@/components/utlis/TableView";
 export default function Page() {
   const pathname = usePathname();
   const caseNumber = pathname.split("/").pop();
@@ -60,9 +63,13 @@ export default function Page() {
                 {formatDate(caseInfo?.createdAt)}
               </h3>
             </div>
+
+            <Modal />
           </div>
         </div>
       </div>
+      <div className=" w-full h-8"></div>
+      <TableView />
     </div>
   );
 }
@@ -115,135 +122,13 @@ const Modal = () => {
     <div>
       <button
         onClick={() => setShowModal(true)}
-        className="bg-red-600 text-white w-10 h-10 mr-5 flex justify-center items-center text-xl font-bold rounded-sm"
+        className="bg-green-600 text-white  px-5 py-3 shadow h-10 mr-5 flex justify-center items-center text-sm font-bold rounded-sm"
       >
-        +
+        Upload +
       </button>
       {showModal ? (
         <>
-          <div className="justify-center w-full items-center grid place-content-center place-items-center grid-cols-5 overflow-x-hidden overflow-y-auto fixed inset-0 z-[999] outline-none focus:outline-none">
-            <div className="relative my-6 w-1/2 col-span-5">
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
-                <div className="flex items-start justify-between p-5 border-b border-solid border-blueGray-200 rounded-t">
-                  <h3 className="text-3xl font-semibold">Create Case</h3>
-                  <button
-                    className="p-1 ml-auto bg-transparent border-0 text-black opacity-5 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
-                    onClick={() => setShowModal(false)}
-                  >
-                    <span className="bg-transparent text-black opacity-5 h-6 w-6 text-2xl block outline-none focus:outline-none">
-                      ×
-                    </span>
-                  </button>
-                </div>
-                <div className="relative p-6 flex-auto">
-                  {error && <p className="text-red-600 mb-4">{error}</p>}
-                  <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                      <label
-                        className="block text-gray-700 text-sm font-bold mb-2"
-                        htmlFor="caseNumber"
-                      >
-                        Case Number
-                      </label>
-                      <input
-                        id="caseNumber"
-                        name="caseNumber"
-                        type="text"
-                        className="border rounded w-full py-2 px-3 text-gray-700"
-                        value={formData.caseNumber}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label
-                        className="block text-gray-700 text-sm font-bold mb-2"
-                        htmlFor="title"
-                      >
-                        Title
-                      </label>
-                      <input
-                        id="title"
-                        name="title"
-                        type="text"
-                        className="border rounded w-full py-2 px-3 text-gray-700"
-                        value={formData.title}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label
-                        className="block text-gray-700 text-sm font-bold mb-2"
-                        htmlFor="courtName"
-                      >
-                        Court Name
-                      </label>
-                      <input
-                        id="courtName"
-                        name="courtName"
-                        type="text"
-                        className="border rounded w-full py-2 px-3 text-gray-700"
-                        value={formData.courtName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label
-                        className="block text-gray-700 text-sm font-bold mb-2"
-                        htmlFor="stateName"
-                      >
-                        State Name
-                      </label>
-                      <input
-                        id="stateName"
-                        name="stateName"
-                        type="text"
-                        className="border rounded w-full py-2 px-3 text-gray-700"
-                        value={formData.stateName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label
-                        className="block text-gray-700 text-sm font-bold mb-2"
-                        htmlFor="date"
-                      >
-                        Date
-                      </label>
-                      <input
-                        id="date"
-                        name="date"
-                        type="date"
-                        className="border rounded w-full py-2 px-3 text-gray-700"
-                        value={formData.date}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="flex items-center justify-end">
-                      <button
-                        className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
-                        type="button"
-                        onClick={() => setShowModal(false)}
-                      >
-                        Close
-                      </button>
-                      <button
-                        className="bg-primary text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
-                        type="submit"
-                      >
-                        Submit Case
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+          <Home setShowModal={setShowModal} />
         </>
       ) : null}
     </div>

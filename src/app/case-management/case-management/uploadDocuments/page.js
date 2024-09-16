@@ -8,10 +8,12 @@ import Web3 from 'web3';
 import { MintAbi } from '@/contracts/ABIs/mint';
 import { DocumentAddress } from '@/contracts/ABIs/mint';
 import toast from "react-hot-toast";
-export default function Home() {
+import axios from "axios";
+import { useAppSelector } from "@/redux/hooks";
+export default function Home({ setShowModal }) {
   const [file, setFile] = useState(null); // Change to null initial state
   const [uploading, setUploading] = useState(false);
-  const user = useSelector(state => state);
+  const user = useAppSelector(state => state.user);
   const [users, setUsers] = useState([]);
   const [options, setOptions] = useState([]);
   const inputFile = useRef(null);
@@ -21,10 +23,11 @@ export default function Home() {
   const fetchUsers = async () => {
     try {
       setUploading(true);
-      const response = await fetch('/api/users/getallusers');
-      if (response.ok) {
+      const response = await axios.get('/api/users/getallusers');
+      if (response.status == 200) {
         setUploading(false);
-        const data = await response.json();
+        const data = await response.data
+        console.log(data)
         setUsers(data.data);
       } else {
         setUploading(false);
@@ -37,18 +40,18 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (user.address) {
-      fetchUsers();
-    }
-  }, [user.address]);
+
+    fetchUsers();
+
+  }, []);
 
   useEffect(() => {
     // Transform users into options array
     const newOptions = users.map(item => {
-      if(item.ethreumAddress.toLowerCase() === user.address){
+      if (item.ethreumAddress.toLowerCase() === user.address) {
         return null;
       }
-      else{
+      else {
         return {
           value: item.ethreumAddress,
           label: item.name
@@ -56,7 +59,7 @@ export default function Home() {
       }
     }).filter(Boolean); // remove null values
     setOptions(newOptions);
-  }, [users,user.address]);
+  }, [users]);
 
   const handleOptionChange = (selectedOptions, permissionType) => {
     const usernames = selectedOptions.map(option => option.value);
@@ -65,7 +68,7 @@ export default function Home() {
     } else if (permissionType === 'modify') {
       setModifyPermissions(usernames);
     }
-   
+
   };
 
   const handleChange = (e) => {
@@ -95,39 +98,39 @@ export default function Home() {
 
       const resData = await res.json();
       if (res.ok) {
-        const { status, ipfsHash} = resData;
+        const { status, ipfsHash } = resData;
         {
 
-            try {
-                // Request user permission to interact with the wallet (MetaMask)
-                await window.ethereum.enable();
-      
-                const accounts = await web3.eth.getAccounts();
-                const account = accounts[0];
-    
-      
-                const tx = await contract.methods.mintDocumentNFT(ipfsHash, viewPermissions, modifyPermissions).send({from: account}); // Send the transaction
-                if (tx && tx.transactionHash) {
-                  console.log("Document minted with IPFS hash:", tx);
-                    toast.success(tx.transactionHash);
-                    setUploading(false);
-                    setFile(null); 
-                } else {
-                    toast.error("Transaction was not mined or returned an undefined hash.");
-                    setUploading(false);
+          try {
+            // Request user permission to interact with the wallet (MetaMask)
+            await window.ethereum.enable();
 
-                    setFile(null); 
-                    
-                }
-            } catch (error) {
+            const accounts = await web3.eth.getAccounts();
+            const account = accounts[0];
+
+
+            const tx = await contract.methods.mintDocumentNFT(ipfsHash, viewPermissions, modifyPermissions).send({ from: account }); // Send the transaction
+            if (tx && tx.transactionHash) {
+              console.log("Document minted with IPFS hash:", tx);
+              toast.success(tx.transactionHash);
+              setUploading(false);
+              setFile(null);
+            } else {
+              toast.error("Transaction was not mined or returned an undefined hash.");
               setUploading(false);
 
-              setFile(null); 
-                toast.error("Error during minting:", error);
-                return null;
+              setFile(null);
+
             }
+          } catch (error) {
+            setUploading(false);
+
+            setFile(null);
+            toast.error("Error during minting:", error);
+            return null;
+          }
         }
-       
+
       } else {
         console.error("Error during upload");
       }
@@ -139,62 +142,80 @@ export default function Home() {
     }
   };
 
+  const genSummary = () => {
+
+  }
   return (
     <>
       {uploading ? (
         <Loader />
       ) : (
         <>
-        <div className="grid grid-cols-5 gap-8">
-          <div className="col-span-5 ">
-            <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-              <div className="border-b border-stroke py-4 px-7 dark:border-strokedark">
-                <h3 className="font-medium text-black dark:text-white">
-                  Legal Records information
-                </h3>
-              </div>
-              <div className="p-7">
-                <div className="rounded-sm border border-stroke px-4 bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                  <div className="flex flex-col gap-5.5 p-6.5">
-                    <div>
-                      <label className="mb-3 block text-black font-medium ">
-                        Upload Document
-                      </label>
-                      <input
-                        type="file"
-                        ref={inputFile}
-                        onChange={(e)=>handleChange(e)}
-                        className="w-full cursor-pointer rounded-lg border-[1.5px] border-stroke bg-transparent outline-none transition file:mr-5 file:border-collapse file:cursor-pointer file:border-0 file:border-r file:border-solid file:border-stroke file:bg-[#793938] file:py-3 file:px-5 file:hover:bg-black file:hover:bg-opacity-10 focus:border-black active:border-black disabled:cursor-default disabled:bg-[#C5F2DD] dark:border-form-strokedark dark:bg-form-input dark:file:border-form-strokedark dark:file:bg-white/30  text-black dark:focus:border-black"
-                      />
+          <div className=" w-full fixed top-0 left-0 z-[9999] h-screen  flex justify-center items-center">
+            <div className=" w-2/3 ">
+              <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                <div className="border-b border-stroke py-4 px-7 dark:border-strokedark">
+                  <h3 className="font-medium text-black dark:text-white">
+                    Legal Records information
+                  </h3>
+                </div>
+                <div className="p-7 w-full">
+                  <div className="rounded-sm border w-full border-stroke px-4 bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="flex w-full justify-between items-center gap-5.5 p-6.5">
+                      <div>
+                        <label className="mb-3 block text-black font-medium ">
+                          Upload Document
+                        </label>
+                        <input
+                          type="file"
+                          ref={inputFile}
+                          onChange={(e) => handleChange(e)}
+                          className="w-full cursor-pointer rounded-lg border-[1.5px] border-stroke bg-transparent outline-none transition file:mr-5 file:border-collapse file:cursor-pointer file:border-0 file:border-r file:border-solid file:border-stroke file:bg-[#793938] file:py-3 file:px-5 file:hover:bg-black file:hover:bg-opacity-10 focus:border-black active:border-black disabled:cursor-default disabled:bg-[#C5F2DD] dark:border-form-strokedark dark:bg-form-input dark:file:border-form-strokedark dark:file:bg-white/30  text-black dark:focus:border-black"
+                        />
+                      </div>
+
+                      <div>
+                        <button
+                          onClick={genSummary}
+                          className="flex justify-center rounded bg-primary py-2 px-6 font-medium text-white hover:bg-opacity-90"
+                        >
+                          Generate Summary
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-5.5 p-6.5">
+                      <div className="w-full sm:w-1/2">
+                        <div className="mb-3 block text-lg font-medium text-black">View Permissions</div>
+                        <Select options={options} isMulti onChange={selectedOptions => handleOptionChange(selectedOptions, 'view')} />
+                      </div>
+                      <div className="w-full sm:w-1/2">
+                        <div className="mb-3 block text-lg font-medium text-black">Modify Permissions</div>
+                        <Select options={options} isMulti onChange={selectedOptions => handleOptionChange(selectedOptions, 'modify')} />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-4.5 my-5">
+                      <button
+                        onClick={() => setShowModal(false)}
+                        className="flex justify-center rounded  bg-gray-200 py-2 px-6 font-medium text-black hover:bg-opacity-90"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={uploadFile}
+                        className="flex justify-center rounded bg-primary py-2 px-6 font-medium text-white hover:bg-opacity-90"
+                      >
+                        Upload
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex gap-5.5 p-6.5">
-                    <div className="w-full sm:w-1/2">
-                      <div className="mb-3 block text-lg font-medium text-black">View Permissions</div>
-                      <Select options={options} isMulti onChange={selectedOptions => handleOptionChange(selectedOptions, 'view')} />
-                    </div>
-                    <div className="w-full sm:w-1/2">
-                      <div className="mb-3 block text-lg font-medium text-black">Modify Permissions</div>
-                      <Select options={options} isMulti onChange={selectedOptions => handleOptionChange(selectedOptions, 'modify')} />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-4.5 my-5">
-                    <button
-                      onClick={uploadFile}
-                      className="flex justify-center rounded bg-primary py-2 px-6 font-medium text-white hover:bg-opacity-90"
-                    >
-                      Upload
-                    </button>
-                  </div>
                 </div>
-             
               </div>
             </div>
           </div>
-        </div>
+          <div className="opacity-75 fixed inset-0 z-[9998] w-full h-full  top-0 right-0 bg-black"></div>
 
-        
         </>
       )}
     </>
