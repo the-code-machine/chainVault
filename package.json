@@ -19,7 +19,7 @@
     "ethers": "^6.12.1",
     "font-awesome": "^4.7.0",
     "formidable": "^3.5.1",
-    "framer-motion": "^11.1.7",
+    "framer-motion": "^11.18.2",
     "jsonwebtoken": "^9.0.2",
     "lottie-react": "^2.4.0",
     "lucide-react": "^0.503.0",

@@ -8,7 +8,7 @@ import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Evault",
+  title: "Chain Vault",
   description: "An Legal Records Management System",
 };
 
