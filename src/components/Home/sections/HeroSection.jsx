@@ -9,22 +9,22 @@ const heroItems = [
   {
     icon: <Shield className="h-8 w-8 text-gray-800" />,
     title: "Secure Storage",
-    href: "/services/storage"
+    href: "/features/secure-storage"
   },
   {
     icon: <Lock className="h-8 w-8 text-gray-800" />,
     title: "Access Control",
-    href: "/services/access"
+    href: "/features/access-control"
   },
   {
     icon: <FileText className="h-8 w-8 text-gray-800" />,
     title: "Document Verification",
-    href: "/services/verify"
+    href: "/features/document-verification"
   },
   {
     icon: <History className="h-8 w-8 text-gray-800" />,
     title: "Audit Trails",
-    href: "/services/audit"
+    href: "/features/audit-trail"
   }
 ];
 
@@ -70,7 +70,7 @@ export default function HeroSection() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
-              <span className="block">Secure Your Legal Records</span>
+              <span className="block">Secure Your Records</span>
               <span className="block text-gray-400">On The Blockchain</span>
             </h1>
           </motion.div>
