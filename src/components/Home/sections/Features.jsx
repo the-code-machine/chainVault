@@ -1,61 +1,141 @@
-import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserShield, faFileUpload, faFileDownload, faHistory, faLock, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
+"use client";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Fingerprint, 
+  Upload, 
+  Link as LinkIcon, 
+  History, 
+  Lock, 
+  Shield, 
+  Database, 
+  FileSearch 
+} from 'lucide-react';
 
 const Features = () => {
-  // Array of Font Awesome icon names corresponding to each feature
-  const iconArray = [faUserShield, faFileUpload, faFileDownload, faHistory, faLock, faShieldAlt];
-
-  // Array of feature titles
-  const featureTitles = [
-    "User Authentication",
-    "Document Upload",
-    "Document Retrieval",
-    "Version Tracking",
-    "Access Permissions Management",
-    "Security Measures"
+  // Feature data with Lucide icons
+  const features = [
+    {
+      icon: <Fingerprint size={32} />,
+      title: "Multi-Factor Authentication",
+      description: "Advanced identity verification with biometric options ensures only authorized personnel can access sensitive records."
+    },
+    {
+      icon: <Upload size={32} />,
+      title: "Secure Document Upload",
+      description: "End-to-end encrypted document upload with format validation and automatic classification."
+    },
+    {
+      icon: <LinkIcon size={32} />,
+      title: "Blockchain Verification",
+      description: "Each document is cryptographically linked to the blockchain, providing tamper-proof verification of authenticity."
+    },
+    {
+      icon: <History size={32} />,
+      title: "Complete Audit Trail",
+      description: "Every view, edit, and access attempt is permanently recorded with timestamp and user identification."
+    },
+    {
+      icon: <Lock size={32} />,
+      title: "Smart Contract Access Control",
+      description: "Granular permissions management through blockchain-based smart contracts with automated access expiration."
+    },
+    {
+      icon: <Shield size={32} />,
+      title: "Military-Grade Encryption",
+      description: "Documents are protected with AES-256 encryption and fragmented storage across the network."
+    },
+    {
+      icon: <Database size={32} />,
+      title: "Distributed Storage",
+      description: "Records are stored across multiple nodes, eliminating single points of failure and ensuring 24/7 availability."
+    },
+    {
+      icon: <FileSearch size={32} />,
+      title: "Instant Document Retrieval",
+      description: "Advanced search algorithms and indexed metadata allow for near-instantaneous document retrieval."
+    }
   ];
 
-  // Array of feature descriptions
-  const featureDescriptions = [
-    "Intuitive design with easy navigation to facilitate seamless interaction for users.",
-    "Simple and secure process for uploading documents.",
-    "Efficient search and retrieval functionality to quickly access specific documents.",
-    "Automatic versioning and tracking of document changes.",
-    "Granular control over access permissions for documents.",
-    "Implementation of robust security protocols to protect documents."
-  ];
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
 
-  // State to track rotation for each div
-  const [rotations, setRotations] = useState(Array(iconArray.length).fill(0));
-
-  // Function to handle click event and update rotation for the clicked div
-  const handleRotate = (idx) => {
-    const newRotations = [...rotations];
-    newRotations[idx] += 360;
-    setRotations(newRotations);
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6 } }
   };
 
   return (
-    <section id='features' className="py-14 bg-gray-200">
-      <div className="max-w-screen-xl mx-auto px-4 text-gray-600 md:px-8">
-        <div className="max-w-xl space-y-3">
-          <p className="text-[#792938] text-3xl font-bold sm:text-4xl"> Features of our Solution </p>
-          <p className='text-xl '> Our Solution have the following features some of them are listed here </p>
-        </div>
-        <div className="mt-12 p-3 rounded border-3-black">
-          <ul className="grid gap-y-8 gap-x-12 sm:grid-cols-2 lg:grid-cols-3">
-            {iconArray.map((icon, idx) => (
-              <li key={idx} className="space-y-3">
-                <div className="w-16 h-16 border text-[#792938] rounded-lg flex items-center justify-center bg-gray-300 transition duration-300 ease-in-out   transform hover:scale-105" style={{ transform: `rotate(${rotations[idx]}deg)` }} onClick={() => handleRotate(idx)}>
-                  <FontAwesomeIcon icon={icon} className="text-[#792938]" size="100px" />
-                </div>
-                <h1 className='font-bold text-2xl text-gray-800'> {featureTitles[idx]} </h1>
-                <p className='text-xl text-gray-800'> {featureDescriptions[idx]} </p>
-              </li>
-            ))}
-          </ul>
-        </div>
+    <section id="features" className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
+          <h2 className="text-4xl font-bold mb-4 text-black">
+            Blockchain-Powered Features
+          </h2>
+          <div className="h-1 w-20 bg-black mx-auto mb-6"></div>
+          <p className="text-xl text-gray-700">
+            Chain Vault brings cutting-edge technology to legal record management, providing unmatched security and efficiency.
+          </p>
+        </motion.div>
+        
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.1 }}
+          className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          {features.map((feature, idx) => (
+            <motion.div
+              key={idx}
+              variants={itemVariants}
+              whileHover={{ y: -10 }}
+              className="bg-gray-50 rounded-lg p-6 border border-gray-200 hover:border-black transition-all duration-300 h-full"
+            >
+              <div className="w-16 h-16 flex items-center justify-center rounded-full bg-black text-white mb-6">
+                {feature.icon}
+              </div>
+              <h3 className="font-bold text-xl text-black mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-gray-700">
+                {feature.description}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-center mt-16"
+        >
+          <a 
+            href="#contact" 
+            className="inline-flex items-center px-6 py-3 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors"
+          >
+            Schedule a Demo
+            <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </a>
+        </motion.div>
       </div>
     </section>
   );

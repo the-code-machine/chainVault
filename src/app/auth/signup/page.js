@@ -1,32 +1,96 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useLottie } from "lottie-react";
-import groovyWalkAnimation from '/public/signin.json';
+import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import Web3 from 'web3';
 import Loader from "@/components/utlis/Loader";
-import Web3 from "web3";
+import { useAppDispatch } from "@/redux/hooks";
+import { setUserAddress, setUserLogin } from "@/redux/slicers/userSlice";
+import { Shield, Lock, AlertCircle, CheckCircle, ArrowRight, FileText } from "lucide-react";
 
-const Home = () => {
-  const [loading, setLoading] = React.useState(false);
+const SignUp = () => {
+  const dispatch = useAppDispatch();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [step, setStep] = useState(1); // 1: Personal Info, 2: Account Setup, 3: Wallet Connection
   const router = useRouter();
-  const options = {
-    animationData: groovyWalkAnimation,
-    loop: true
-  }
-  const { View } = useLottie(options);
-  const [userName, setUserName] = React.useState('');
-  ;
-  const handleMetaMaskSignUp = async (e) => {
-    e.preventDefault();
-    if (userName === "") {
-      toast.warn("Please enter your name");
-      return;
-    }
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const validateStep1 = () => {
+    if (!formData.firstName || !formData.lastName) {
+      setError("First name and last name are required");
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (!formData.email) {
+      setError("Email is required");
+      return false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+    
+    if (!formData.password) {
+      setError("Password is required");
+      return false;
+    }
+    
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return false;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+    
+    return true;
+  };
+
+  const goToNextStep = () => {
+    if (step === 1 && validateStep1()) {
+      setError("");
+      setStep(2);
+    } else if (step === 2 && validateStep2()) {
+      setError("");
+      setStep(3);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
+      setError("");
+    }
+  };
+
+  const handleMetaMaskConnect = async () => {
+    setError("");
     setLoading(true);
+    
     try {
       if (typeof window.ethereum !== 'undefined') {
         const web3 = new Web3(window.ethereum);
@@ -35,121 +99,326 @@ const Home = () => {
         const accounts = await web3.eth.getAccounts();
         const address = accounts[0];
 
-        // Send address to backend API
+        // Here you would typically send all form data along with the wallet address to your API
         const response = await fetch('/api/users/signup', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ ethreumAddress: address.toLowerCase(), name: userName }),
+          body: JSON.stringify({ 
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            password: formData.password,
+            ethreumAddress: address 
+          }),
         });
 
         if (response.ok) {
-          const data = await response.json();
           setLoading(false);
-          toast.success("Signup successful");
-          router.push("/auth/login");
-          // Optionally, you can perform further actions based on the response from the backend
+          dispatch(setUserAddress(address));
+          dispatch(setUserLogin(true));
+          toast.success("Account created successfully!");
+          router.push("/dashboard");
         } else {
-          // Handle non-successful response
-          console.error('Failed to authenticate with MetaMask');
-          toast.error('Failed to authenticate with MetaMask');
+          setError("Failed to create account. Please try again.");
+          toast.error('Registration failed');
           setLoading(false);
         }
       } else {
+        setError("MetaMask not installed. Please install MetaMask to continue.");
         toast.error("MetaMask not installed");
         setLoading(false);
       }
     } catch (error) {
-      console.error("MetaMask authentication error:", error);
-      toast.error("MetaMask authentication error");
+      console.error("Registration error:", error);
+      setError("Registration error. Please try again.");
+      toast.error("Registration failed");
       setLoading(false);
     }
   };
-  return (
-    <div className="rounded-sm border border-stroke  bg-white shadow-default overflow-y-hidden">
-      <div className="flex flex-wrap items-center ">
-        <div className="hidden w-full xl:block xl:w-1/2 h-screen overflow-hidden">
-          <div className="py-20 px-26 flex flex-col space-y-5 justify-center items-center text-center">
-            <Link className="mb-5.5 inline-block" href="/">
-              <h1 className=" text-4xl text-[#792938ed] font-bold">eVault</h1>
-            </Link>
-            <p className=" text-[#792938ed] w-11/12">
-              Experience the fusion of technology and security. With <span className="font-bold text-2xl ">BlockChain </span>encryption, we ensure your legal documents are safe. Trust us to guard your peace of mind..
-            </p>
-            <span className="mt-15 inline-block ">
-              {View}
-            </span>
-          </div>
-        </div>
-        <div className="w-full border-stroke dark:border-strokedark xl:w-1/2 xl:border-l-2">
-          <div className="w-full p-4 sm:p-12.5 xl:p-20">
-            <h2 className="mb-9 text-4xl font-bold text-[#792938ed] sm:text-title-xl2">
-              Sign Up to eVault
-            </h2>
-            <form>
-              {/* Name */}
-              <div className="mb-4">
-                <label className="mb-2.5 block font-medium text-[#792938ed]">
-                  Name
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={userName}
-                    placeholder="username"
-                    onChange={(e) =>
-                      setUserName(e.target.value)
-                    }
-                    className="w-full rounded-lg border border-stroke bg-transparent py-4 pl-6 pr-10 text-[#792938ed] outline-none"
-                  />
-                  <span className="absolute right-4 top-4">
-                    <svg
-                      className="fill-current"
-                      width="22"
-                      height="22"
-                      viewBox="0 0 22 22"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <g opacity="0.5">
-                        <path
-                          d="M11.0008 9.52185C13.5445 9.52185 15.607 7.5281 15.607 5.0531C15.607 2.5781 13.5445 0.584351 11.0008 0.584351C8.45703 0.584351 6.39453 2.5781 6.39453 5.0531C6.39453 7.5281 8.45703 9.52185 11.0008 9.52185ZM11.0008 2.1656C12.6852 2.1656 14.0602 3.47185 14.0602 5.08748C14.0602 6.7031 12.6852 8.00935 11.0008 8.00935C9.31641 8.00935 7.94141 6.7031 7.94141 5.08748C7.94141 3.47185 9.31641 2.1656 11.0008 2.1656Z"
-                          fill=""
-                        />
-                        <path
-                          d="M13.2352 11.0687H8.76641C5.08828 11.0687 2.09766 14.0937 2.09766 17.7719V20.625C2.09766 21.0375 2.44141 21.4156 2.88828 21.4156C3.33516 21.4156 3.67891 21.0719 3.67891 20.625V17.7719C3.67891 14.9531 5.98203 12.6156 8.83516 12.6156H13.2695C16.0883 12.6156 18.4258 14.9187 18.4258 17.7719V20.625C18.4258 21.0375 18.7695 21.4156 19.2164 21.4156C19.6633 21.4156 20.007 21.0719 20.007 20.625V17.7719C19.9039 14.0937 16.9133 11.0687 13.2352 11.0687Z"
-                          fill=""
-                        />
-                      </g>
-                    </svg>
-                  </span>
-                </div>
-              </div>
 
-              <div className="mb-5">
-                <input
-                  type="submit"
-                  value="Connect MetaMask"
-                  placeholder="Create account"
-                  onClick={handleMetaMaskSignUp}
-                  className="w-full cursor-pointer rounded-lg bg-[#792938ed] p-4 text-white transition hover:bg-opacity-90"
-                />
-              </div>
-              <div className="mt-6 text-center text-[#792938ed]">
-                <p>
-                  Already have an account?{" "}
-                  <Link href="/auth/login" className="text-green-700 font-semibold">
-                    Sign In
-                  </Link>
-                </p>
-              </div>
-            </form>
+  const submitForm = (e) => {
+    e.preventDefault();
+    if (step === 3) {
+      handleMetaMaskConnect();
+    } else {
+      goToNextStep();
+    }
+  };
+
+  const renderStepIndicator = () => {
+    return (
+      <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center">
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 1 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+            1
+          </div>
+          <div className={`w-12 h-1 ${step >= 2 ? 'bg-black' : 'bg-gray-200'}`}></div>
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 2 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+            2
+          </div>
+          <div className={`w-12 h-1 ${step >= 3 ? 'bg-black' : 'bg-gray-200'}`}></div>
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 3 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+            3
           </div>
         </div>
       </div>
+    );
+  };
+
+  const renderFormStep = () => {
+    switch (step) {
+      case 1:
+        return (
+          <>
+            <h3 className="text-xl font-semibold mb-4">Personal Information</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="John"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Doe"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+            </div>
+          </>
+        );
+      case 2:
+        return (
+          <>
+            <h3 className="text-xl font-semibold mb-4">Account Setup</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="your@email.com"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Must be at least 8 characters long
+                </p>
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+            </div>
+          </>
+        );
+      case 3:
+        return (
+          <>
+            <h3 className="text-xl font-semibold mb-4">Connect Your Wallet</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+              <p className="text-gray-700 mb-4">
+                To complete your registration, connect your MetaMask wallet. This will be used to securely manage your documents on the blockchain.
+              </p>
+              <div className="flex items-center space-x-2 mb-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <p className="text-sm text-gray-600">Secure document verification</p>
+              </div>
+              <div className="flex items-center space-x-2 mb-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <p className="text-sm text-gray-600">Tamper-proof storage</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <p className="text-sm text-gray-600">Complete control over your data</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleMetaMaskConnect}
+              className="w-full flex items-center justify-center space-x-2 bg-black text-white py-4 px-4 rounded-lg transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+            >
+              <img 
+                src="/metamask-fox.svg" 
+                alt="MetaMask" 
+                className="h-6 w-6"
+              />
+              <span>Connect MetaMask Wallet</span>
+            </button>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Header with logo */}
+      <header className="bg-black py-4">
+        <div className="container mx-auto px-6">
+          <Link href="/" className="flex items-center">
+            <Shield className="h-8 w-8 text-white mr-2" />
+            <span className="text-xl font-bold text-white">ChainVault</span>
+          </Link>
+        </div>
+      </header>
+
+      <div className="flex flex-1 flex-col md:flex-row">
+        {/* Left Column - Info */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="hidden md:flex md:w-1/2 bg-black text-white p-8 justify-center items-center"
+        >
+          <div className="max-w-md px-6 py-10 flex flex-col items-center text-center">
+            <FileText className="h-16 w-16 mb-6" />
+            <h1 className="text-4xl font-bold mb-6">Join Chain Vault</h1>
+            <p className="text-xl mb-8">
+              Create an account to securely store, manage, and share your important legal documents with blockchain verification.
+            </p>
+            
+            <div className="w-full bg-white/10 rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-semibold mb-4">Benefits of Chain Vault</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start">
+                  <CheckCircle className="h-5 w-5 text-green-400 mr-3 flex-shrink-0 mt-0.5" />
+                  <span>Military-grade encryption for all your documents</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-5 w-5 text-green-400 mr-3 flex-shrink-0 mt-0.5" />
+                  <span>Blockchain verification ensures tamper-proof storage</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-5 w-5 text-green-400 mr-3 flex-shrink-0 mt-0.5" />
+                  <span>Granular access control with smart contracts</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-5 w-5 text-green-400 mr-3 flex-shrink-0 mt-0.5" />
+                  <span>Complete audit trail for all document activity</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-center space-x-2 text-sm">
+              <Lock className="h-4 w-4" />
+              <span>Your data is secure and private</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Right Column - Sign Up Form */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full md:w-1/2 px-6 py-10 flex items-center justify-center"
+        >
+          <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 md:p-10">
+            <div className="text-center mb-4">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h2>
+              <p className="text-gray-600">Step {step} of 3</p>
+            </div>
+
+            {renderStepIndicator()}
+
+            {error && (
+              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={submitForm} className="space-y-6">
+              {renderFormStep()}
+
+              <div className="flex justify-between pt-4">
+                {step > 1 ? (
+                  <button
+                    type="button"
+                    onClick={goToPreviousStep}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  >
+                    Back
+                  </button>
+                ) : (
+                  <div></div>
+                )}
+                
+                {step < 3 ? (
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-black text-white rounded-md flex items-center hover:bg-gray-800 transition focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  >
+                    Next
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            <div className="text-center mt-6 pt-4 border-t border-gray-200">
+              <p className="text-gray-600">
+                Already have an account?{" "}
+                <Link href="/auth/login" className="text-black font-semibold hover:underline">
+                  Sign In
+                </Link>
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
       {loading && <Loader />}
     </div>
   );
 };
-export default Home;
+
+export default SignUp;

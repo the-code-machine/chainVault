@@ -1,4 +1,7 @@
-// pages/api/getCaseByNumber.js
+// app/api/getCaseByNumber/route.js
+
+export const dynamic = "force-dynamic";
+
 import { connectDb } from "@/dbConnection/db";
 import CaseModal from "@/models/caseModal";
 import { NextResponse } from "next/server";
