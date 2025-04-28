@@ -4,66 +4,77 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import Web3 from 'web3';
 import Loader from "@/components/utlis/Loader";
 import { useAppDispatch } from "@/redux/hooks";
 import { setUserAddress, setUserLogin } from "@/redux/slicers/userSlice";
-import { Shield, Lock, AlertCircle } from "lucide-react";
-
-// Import your animation here
-// import loginAnimation from '/public/signin.json';
+import { Shield, Lock, AlertCircle, User, Building } from "lucide-react";
 
 const Login = () => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loginType, setLoginType] = useState("user"); // "user" or "company"
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
   const router = useRouter();
-  
 
-  const handleMetaMaskSignIn = async (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    
+    if (!formData.email || !formData.password) {
+      setError("Email and password are required");
+      return;
+    }
+
     setLoading(true);
     
     try {
-      if (typeof window !== 'undefined') {
-        const web3 = new Web3(window.ethereum);
-        await window.ethereum.enable(); // Request user's permission to connect
+      // Different API endpoints for user vs company
+      const endpoint = loginType === "user" ? "/api/users/login" : "/api/companies/login";
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        }),
+      });
 
-        const accounts = await web3.eth.getAccounts();
-        const address = accounts[0];
-
-        // Send address to backend API
-        const response = await fetch('/api/users/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ethreumAddress: address }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          
-          setLoading(false);
-          dispatch(setUserAddress(address));
-          dispatch(setUserLogin(true));
-          toast.success("Login successful");
-          router.push("/dashboard");
-        } else {
-          setError("Failed to authenticate with MetaMask");
-          toast.error('Failed to authenticate with MetaMask');
-          setLoading(false);
-        }
+      if (response.ok) {
+        const data = await response.json();
+        
+        setLoading(false);
+        dispatch(setUserLogin(true));
+        
+        // Store user or company info in redux state
+        toast.success("Login successful");
+        
+        // Redirect to appropriate dashboard
+        router.push("/services");
       } else {
-        setError("MetaMask not installed. Please install MetaMask to continue.");
-        toast.error("MetaMask not installed");
+        const data = await response.json();
+        setError(data.error || "Login failed. Please check your credentials.");
+        toast.error('Login failed');
         setLoading(false);
       }
     } catch (error) {
-      console.error("MetaMask authentication error:", error);
-      setError("Authentication error. Please try again.");
-      toast.error("MetaMask authentication error");
+      console.error("Login error:", error);
+      setError("Login error. Please try again.");
+      toast.error("Login failed");
       setLoading(false);
     }
   };
@@ -81,7 +92,7 @@ const Login = () => {
       </header>
 
       <div className="flex flex-1 flex-col md:flex-row">
-        {/* Left Column - Animation and Info */}
+        {/* Left Column - Info */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -95,11 +106,9 @@ const Login = () => {
               Chain Vault provides blockchain-powered security for your most important legal records and documents.
             </p>
             <div className="w-full h-64 flex items-center justify-center mb-8">
-              {/* Placeholder for animation - replace with your actual animation */}
               <div className="rounded-full bg-white/10 p-8">
                 <Lock className="h-32 w-32 text-white/80" />
               </div>
-              {/* {View} */}
             </div>
             <div className="grid grid-cols-3 gap-4 w-full">
               <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -128,6 +137,38 @@ const Login = () => {
               <p className="text-gray-600">Sign in to access your secure documents</p>
             </div>
 
+            {/* Login Type Toggle */}
+            <div className="flex rounded-md shadow-sm p-1 bg-gray-100 mb-6">
+              <button
+                type="button"
+                className={`w-1/2 py-2 text-sm font-medium rounded-md transition ${
+                  loginType === "user"
+                    ? "bg-black text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setLoginType("user")}
+              >
+                <div className="flex items-center justify-center">
+                  <User className="h-4 w-4 mr-2" />
+                  User Login
+                </div>
+              </button>
+              <button
+                type="button"
+                className={`w-1/2 py-2 text-sm font-medium rounded-md transition ${
+                  loginType === "company"
+                    ? "bg-black text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setLoginType("company")}
+              >
+                <div className="flex items-center justify-center">
+                  <Building className="h-4 w-4 mr-2" />
+                  Company Login
+                </div>
+              </button>
+            </div>
+
             {error && (
               <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
@@ -135,23 +176,7 @@ const Login = () => {
               </div>
             )}
 
-            <form className="space-y-6">
-              <div className="relative">
-                <button
-                  onClick={handleMetaMaskSignIn}
-                  className="w-full flex items-center justify-center space-x-2 bg-black text-white py-4 px-4 rounded-lg transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
-                >
-                  <Lock className="h-5 w-5" />
-                  <span>Connect with MetaMask</span>
-                </button>
-              </div>
-
-              <div className="relative flex items-center justify-center">
-                <div className="flex-grow border-t border-gray-300"></div>
-                <span className="flex-shrink mx-4 text-gray-600">or continue with</span>
-                <div className="flex-grow border-t border-gray-300"></div>
-              </div>
-
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -160,6 +185,9 @@ const Login = () => {
                   <input
                     type="email"
                     id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
                     placeholder="your@email.com"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
                   />
@@ -171,6 +199,9 @@ const Login = () => {
                   <input
                     type="password"
                     id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
                     placeholder="••••••••"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
                   />

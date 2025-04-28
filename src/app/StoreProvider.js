@@ -1,8 +1,9 @@
 'use client'
-import { useRef } from 'react'
+import { useRef ,useEffect} from 'react'
 import { Provider } from 'react-redux'
 import { makeStore } from '@/redux/store'
-
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
+import { setUserDetails } from '@/redux/slicers/userSlice'
 export default function StoreProvider({ children }) {
   const storeRef = useRef()
   if (!storeRef.current) {
@@ -10,5 +11,31 @@ export default function StoreProvider({ children }) {
     storeRef.current = makeStore()
   }
 
-  return <Provider store={storeRef.current}>{children}</Provider>
+  return <Provider store={storeRef.current}>
+    <LoadData/>
+    {children}</Provider>
+}
+const LoadData = ()=>{
+  const dispatch = useAppDispatch();
+
+    useEffect(() => {
+      const fetchUserDetails = async () => {
+
+          try {
+            const response = await fetch('/api/users/profile');
+            if (response.ok) {
+              const data = await response.json();
+              dispatch(setUserDetails(data));
+            }
+          } catch (error) {
+            console.error("Error fetching user details:", error);
+          } 
+        
+      };
+  
+      fetchUserDetails();
+    }, [ dispatch]);
+    return(
+      <></>
+    )
 }

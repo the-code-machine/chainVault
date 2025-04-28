@@ -1,5 +1,5 @@
 export const alchemyUrl = 'https://eth-sepolia.g.alchemy.com/v2/PJcKJRaKJlQGzmtYVacG2Vjbqxc4zNNb';
-export const DocumentAddress = "0x853939057dab3a2a35d9293c44aac0a24de63fb9"
+export const DocumentAddress = "0x222b500b8877113791433c3abba95cd77d9671d8"
 export const MintAbi = [
     {
         "inputs": [],
@@ -368,6 +368,63 @@ export const MintAbi = [
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getModifiers",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "modifiersList",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "author",
+                "type": "address"
+            }
+        ],
+        "name": "getSharedDocuments",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getViewers",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "viewers",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "owner",
                 "type": "address"
@@ -421,7 +478,7 @@ export const MintAbi = [
             },
             {
                 "internalType": "address[]",
-                "name": "modifiers",
+                "name": "modifiersList",
                 "type": "address[]"
             }
         ],
@@ -439,7 +496,7 @@ export const MintAbi = [
             },
             {
                 "internalType": "address",
-                "name": "modifiername",
+                "name": "modifierAddress",
                 "type": "address"
             },
             {
@@ -671,7 +728,7 @@ export const MintAbi = [
         "inputs": [
             {
                 "internalType": "address",
-                "name": "modifiername",
+                "name": "modifierAccount",
                 "type": "address"
             }
         ],
