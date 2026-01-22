@@ -1,40 +1,41 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Shield, 
-  Files, 
-  Share2, 
-  Clock, 
-  FileText, 
-  Plus, 
-  Search, 
-  Settings, 
-  ChevronDown, 
-  Download, 
-  Eye, 
-  AlertTriangle, 
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Shield,
+  Files,
+  Share2,
+  Clock,
+  FileText,
+  Plus,
+  Search,
+  Settings,
+  ChevronDown,
+  Download,
+  Eye,
+  AlertTriangle,
   CheckCircle,
   Upload,
   Wallet,
-  ExternalLink
-} from 'lucide-react';
-import Web3 from 'web3';
-import { useAppSelector } from '@/redux/hooks';
-import UserProfile from '@/components/utlis/UserProfile';
-import UploadDocumentModal from '@/components/utlis/UploadDocumentModal';
-import toast from 'react-hot-toast';
-import { DocumentAddress, MintAbi } from '@/contracts/ABIs/mint';
+  ExternalLink,
+} from "lucide-react";
+import Web3 from "web3";
+import { useAppSelector } from "@/redux/hooks";
+import UserProfile from "@/components/utlis/UserProfile";
+import UploadDocumentModal from "@/components/utlis/UploadDocumentModal";
+import toast from "react-hot-toast";
+import { DocumentAddress, MintAbi } from "@/contracts/ABIs/mint";
+
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('recent');
+  const [activeTab, setActiveTab] = useState("recent");
   const [documents, setDocuments] = useState([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingWallet, setLoadingWallet] = useState(false);
   const [recentActivity, setRecentActivity] = useState([]);
-  
+
   const user = useAppSelector((state) => state.user);
-  
+
   // Fetch documents on component mount
   useEffect(() => {
     if (user?.ethreumAddress) {
@@ -42,6 +43,89 @@ export default function Dashboard() {
     }
   }, [user?.ethreumAddress]);
 
+  async function getSharedCount(documentContract, tokenId, userAddress) {
+    try {
+      let viewers = [];
+      let modifiers = [];
+      let sharedCount = 0;
+
+      // First try to use the getViewers and getModifiers functions from the contract
+      try {
+        viewers = await documentContract.methods.getViewers(tokenId).call();
+        modifiers = await documentContract.methods.getModifiers(tokenId).call();
+
+        // Filter out the current user's address and the zero address
+        const uniqueViewers = viewers.filter(
+          (addr) =>
+            addr !== userAddress &&
+            addr !== "0x0000000000000000000000000000000000000000",
+        );
+
+        const uniqueModifiers = modifiers.filter(
+          (addr) =>
+            addr !== userAddress &&
+            addr !== "0x0000000000000000000000000000000000000000" &&
+            !uniqueViewers.includes(addr), // Avoid double counting
+        );
+
+        sharedCount = uniqueViewers.length + uniqueModifiers.length;
+        console.log(
+          `Token ${tokenId} has ${uniqueViewers.length} viewers and ${uniqueModifiers.length} modifiers`,
+        );
+
+        return sharedCount;
+      } catch (error) {
+        console.warn("Error using getViewers/getModifiers:", error.message);
+
+        // Fallback method: try to use getSharedDocuments
+        try {
+          const authorAddress = await documentContract.methods
+            .tokenAuthor(tokenId)
+            .call();
+          if (authorAddress === userAddress) {
+            const sharedDocs = await documentContract.methods
+              .getSharedDocuments(userAddress)
+              .call();
+            if (sharedDocs.includes(tokenId.toString())) {
+              // We know it's shared but not with how many users - return at least 1
+              return 1;
+            }
+          }
+        } catch (error) {
+          console.warn("Error using getSharedDocuments:", error.message);
+        }
+
+        // Second fallback: use contract logs to estimate
+        try {
+          const logs = await documentContract.methods
+            .getDocumentLogs(tokenId)
+            .call();
+          const grantActions = logs.filter(
+            (log) =>
+              log.action.includes("Grant") || log.action.includes("Share"),
+          );
+
+          // Count unique addresses that received grants
+          const uniqueGrantRecipients = new Set();
+          for (const log of grantActions) {
+            if (log.account !== userAddress) {
+              uniqueGrantRecipients.add(log.account);
+            }
+          }
+
+          return uniqueGrantRecipients.size;
+        } catch (error) {
+          console.warn("Error using logs for estimation:", error.message);
+        }
+
+        // If all methods fail, return 0
+        return 0;
+      }
+    } catch (error) {
+      console.error("Error calculating shared count:", error);
+      return 0;
+    }
+  }
   // Fetch documents from blockchain
   const fetchDocuments = async () => {
     if (!user?.ethreumAddress) {
@@ -50,96 +134,165 @@ export default function Dashboard() {
 
     try {
       setLoading(true);
-      
+
       // Initialize Web3
       const web3 = new Web3(window.ethereum);
       const documentContract = new web3.eth.Contract(MintAbi, DocumentAddress);
 
-      // Get documents owned/viewable/modifiable by the user
-      const ownedTokens = await documentContract.methods.tokensOfOwner(user.ethreumAddress).call();
-      const viewableTokens = await documentContract.methods.tokensOfViewer(user.ethreumAddress).call();
-      const modifiableTokens = await documentContract.methods.tokensOfModifier(user.ethreumAddress).call();
-      
-      // Combine all tokens and remove duplicates
-      const allTokenIds = [...new Set([...ownedTokens, ...viewableTokens, ...modifiableTokens])];
-      
+      // Get documents owned by the user
+      let allTokenIds = [];
+      try {
+        const ownedTokens = await documentContract.methods
+          .tokensOfOwner(user.ethreumAddress)
+          .call();
+        console.log("Owned tokens:", ownedTokens);
+        allTokenIds = [...allTokenIds, ...ownedTokens];
+      } catch (error) {
+        console.error("Error getting owned tokens:", error);
+      }
+
+      // Get documents user can view
+      try {
+        const viewableTokens = await documentContract.methods
+          .tokensOfViewer(user.ethreumAddress)
+          .call();
+        console.log("Viewable tokens:", viewableTokens);
+        allTokenIds = [...allTokenIds, ...viewableTokens];
+      } catch (error) {
+        console.error("Error getting viewable tokens:", error);
+      }
+
+      // Get documents user can modify
+      try {
+        const modifiableTokens = await documentContract.methods
+          .tokensOfModifier(user.ethreumAddress)
+          .call();
+        console.log("Modifiable tokens:", modifiableTokens);
+        allTokenIds = [...allTokenIds, ...modifiableTokens];
+      } catch (error) {
+        console.error("Error getting modifiable tokens:", error);
+      }
+
+      // Remove duplicates
+      allTokenIds = [...new Set(allTokenIds)];
+      console.log("All token IDs:", allTokenIds);
+
       // Fetch document details for each token
       const documentsData = await Promise.all(
         allTokenIds.map(async (tokenId) => {
-          // Get IPFS hash
-          const ipfsHash = await documentContract.methods.tokenURI(tokenId).call();
-      
-          // Get document logs
-          const logs = await documentContract.methods.getDocumentLogs(tokenId).call();
-      
-          // Get permissions
-          const canUserView = await documentContract.methods.canView(tokenId, user.ethreumAddress).call();
-          const canUserModify = await documentContract.methods.canModify(tokenId, user.ethreumAddress).call();
-          const authorAddress = await documentContract.methods.tokenAuthor(tokenId).call();
-      
-          // 🆕 Fetch viewers and modifiers just to count them
-          let viewers = [];
-          let modifiers = [];
           try {
-            viewers = await documentContract.methods.getViewers(tokenId).call();
-            modifiers = await documentContract.methods.getModifiers(tokenId).call();
+            // Get IPFS hash
+            const ipfsHash = await documentContract.methods
+              .tokenURI(tokenId)
+              .call();
+
+            // Get document logs
+            const logs = await documentContract.methods
+              .getDocumentLogs(tokenId)
+              .call();
+
+            // Get permissions
+            const canUserView = await documentContract.methods
+              .canView(tokenId, user.ethreumAddress)
+              .call();
+            const canUserModify = await documentContract.methods
+              .canModify(tokenId, user.ethreumAddress)
+              .call();
+            const authorAddress = await documentContract.methods
+              .tokenAuthor(tokenId)
+              .call();
+
+            // Calculate shared count using helper function
+            const sharedCount = await getSharedCount(
+              documentContract,
+              tokenId,
+              user.ethreumAddress,
+            );
+            console.log(
+              `Document ${tokenId} is shared with ${sharedCount} users`,
+            );
+
+            // Mock name and type logic
+            let fileName = `Document-${tokenId}`;
+            let fileType = "Other";
+
+            // Try to extract name from IPFS hash (if metadata is available)
+            try {
+              const metadataUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}/metadata.json`;
+              const response = await fetch(metadataUrl);
+              if (response.ok) {
+                const metadata = await response.json();
+                if (metadata.name) {
+                  fileName = metadata.name;
+
+                  // Determine document type from extension
+                  const fileExtension = fileName.split(".").pop().toUpperCase();
+                  if (fileExtension === "PDF") fileType = "PDF";
+                  else if (["DOCX", "DOC"].includes(fileExtension))
+                    fileType = "DOCX";
+                }
+              }
+            } catch (error) {
+              console.log("Error fetching metadata:", error);
+            }
+
+            const lastModified =
+              logs.length > 0
+                ? new Date(
+                    parseInt(logs[logs.length - 1].timestamp) * 1000,
+                  ).toLocaleString()
+                : "Unknown";
+
+            return {
+              id: tokenId,
+              name: fileName,
+              type: fileType,
+              size: "Unknown",
+              dateModified: lastModified,
+              status: "verified",
+              ipfsHash,
+              authorAddress,
+              canView: canUserView,
+              canModify: canUserModify,
+              logs,
+              sharedWith: sharedCount,
+            };
           } catch (error) {
-            console.error(`Failed to fetch viewers/modifiers for token ${tokenId}`, error);
+            console.error(`Error processing token ${tokenId}:`, error);
+            return null;
           }
-      
-          // Only use length
-          const sharedCount = new Set([...viewers, ...modifiers]).size;
-           console.log(viewers, modifiers, sharedCount)
-          // Mock name and type logic
-          let metadata = { name: `Document-${tokenId}` };
-          const fileExtension = metadata.name ? metadata.name.split('.').pop().toUpperCase() : "";
-          const fileType = fileExtension === "PDF" ? "PDF" :
-                          (fileExtension === "DOCX" || fileExtension === "DOC") ? "DOCX" :
-                          "Other";
-      
-          const lastModified = logs.length > 0 
-            ? new Date(parseInt(logs[logs.length - 1].timestamp) * 1000).toLocaleString()
-            : "Unknown";
-      
-          return {
-            id: tokenId,
-            name: metadata.name || `Document-${tokenId}`,
-            type: fileType,
-            size: metadata.size || "Unknown",
-            dateModified: lastModified,
-            status: 'verified',
-            ipfsHash,
-            authorAddress,
-            canView: canUserView,
-            canModify: canUserModify,
-            logs,
-            sharedWith: sharedCount   // 🆕 Only number (count)
-          };
-        })
+        }),
       );
-      
-      setDocuments(documentsData);
-      
+
+      // Filter out failed document fetches
+      const validDocuments = documentsData.filter((doc) => doc !== null);
+      console.log("Valid documents:", validDocuments);
+      setDocuments(validDocuments);
+
       // Extract activity logs
-      const allLogs = documentsData.flatMap(doc => 
-        doc.logs.map(log => ({
+      const allLogs = validDocuments.flatMap((doc) =>
+        doc.logs.map((log) => ({
           id: `${doc.id}-${log.timestamp}`,
           action: log.action,
           document: doc.name,
-          user: log.account === user.ethreumAddress ? 'You' : `${log.account.substring(0, 6)}...${log.account.substring(log.account.length - 4)}`,
-          time: new Date(parseInt(log.timestamp) * 1000).toLocaleString()
-        }))
+          user:
+            log.account === user.ethreumAddress
+              ? "You"
+              : `${log.account.substring(0, 6)}...${log.account.substring(log.account.length - 4)}`,
+          time: new Date(parseInt(log.timestamp) * 1000).toLocaleString(),
+        })),
       );
-      
+
       // Sort by timestamp (newest first) and take the latest 10
-      const latestLogs = allLogs.sort((a, b) => {
-        const timeA = new Date(a.time).getTime();
-        const timeB = new Date(b.time).getTime();
-        return timeB - timeA;
-      }).slice(0, 10);
-      
+      const latestLogs = allLogs
+        .sort((a, b) => {
+          const timeA = new Date(a.time).getTime();
+          const timeB = new Date(b.time).getTime();
+          return timeB - timeA;
+        })
+        .slice(0, 10);
+
       setRecentActivity(latestLogs);
-      
     } catch (error) {
       console.error("Error fetching documents:", error);
       toast.error("Failed to fetch documents");
@@ -154,26 +307,26 @@ export default function Dashboard() {
       toast.error("MetaMask is not installed");
       return;
     }
-    
+
     try {
       setLoadingWallet(true);
-      
+
       // Request account access
-      const accounts = await window.ethereum.request({ 
-        method: 'eth_requestAccounts' 
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
       });
-      
+
       const address = accounts[0];
-      
+
       // Update the user's Ethereum address in the backend
-      const response = await fetch('/api/wallet/connect', {
-        method: 'POST',
+      const response = await fetch("/api/wallet/connect", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ ethreumAddress: address }),
       });
-      
+
       if (response.ok) {
         toast.success("Wallet connected successfully");
         fetchDocuments(); // Refresh documents after connecting wallet
@@ -188,7 +341,7 @@ export default function Dashboard() {
       setLoadingWallet(false);
     }
   };
-  
+
   // Shortern Ethereum address for display
   const shortenAddress = (address) => {
     if (!address) return "";
@@ -197,26 +350,26 @@ export default function Dashboard() {
 
   // File icon helper
   const getFileIcon = (type) => {
-    switch(type) {
-      case 'PDF':
+    switch (type) {
+      case "PDF":
         return <FileText className="h-10 w-10 text-red-500" />;
-      case 'DOCX':
+      case "DOCX":
         return <FileText className="h-10 w-10 text-blue-500" />;
       default:
         return <FileText className="h-10 w-10 text-gray-500" />;
     }
   };
-  
+
   // Status badge helper
   const getStatusBadge = (status) => {
-    switch(status) {
-      case 'verified':
+    switch (status) {
+      case "verified":
         return (
           <span className="flex items-center text-green-700 bg-green-100 px-2 py-1 rounded text-xs">
             <CheckCircle className="h-3 w-3 mr-1" /> Verified
           </span>
         );
-      case 'pending':
+      case "pending":
         return (
           <span className="flex items-center text-yellow-700 bg-yellow-100 px-2 py-1 rounded text-xs">
             <Clock className="h-3 w-3 mr-1" /> Pending
@@ -231,16 +384,15 @@ export default function Dashboard() {
   const handleDocumentUploaded = () => {
     fetchDocuments();
   };
-
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="p-6 max-w-7xl mx-auto">
         {/* Welcome section */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.firstName || 'User'}
+            Welcome back, {user?.firstName || "User"}
           </h1>
-          
+
           <div className="flex space-x-3 items-center">
             {/* Wallet status */}
             {user?.ethreumAddress ? (
@@ -249,7 +401,7 @@ export default function Dashboard() {
                 <span className="text-sm text-gray-600 mr-1">
                   {shortenAddress(user.ethreumAddress)}
                 </span>
-                <a 
+                <a
                   href={`https://etherscan.io/address/${user.ethreumAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -265,10 +417,12 @@ export default function Dashboard() {
                 className="flex items-center space-x-1 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-md text-sm transition mr-2"
               >
                 <Wallet className="h-4 w-4 mr-1" />
-                <span>{loadingWallet ? "Connecting..." : "Connect Wallet"}</span>
+                <span>
+                  {loadingWallet ? "Connecting..." : "Connect Wallet"}
+                </span>
               </button>
             )}
-            
+
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
@@ -279,8 +433,8 @@ export default function Dashboard() {
                 placeholder="Search documents..."
               />
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setIsUploadModalOpen(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
             >
@@ -289,7 +443,7 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-        
+
         {/* Stats overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
           <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -313,7 +467,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <div className="flex items-center">
@@ -327,7 +481,10 @@ export default function Dashboard() {
                     </dt>
                     <dd>
                       <div className="text-lg font-medium text-gray-900">
-                        {documents.filter(doc => doc.status === 'verified').length}
+                        {
+                          documents.filter((doc) => doc.status === "verified")
+                            .length
+                        }
                       </div>
                     </dd>
                   </dl>
@@ -335,7 +492,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <div className="flex items-center">
@@ -349,7 +506,11 @@ export default function Dashboard() {
                     </dt>
                     <dd>
                       <div className="text-lg font-medium text-gray-900">
-                        {documents.filter(doc => doc.authorAddress !== user?.ethreumAddress).length}
+                        {
+                          documents.filter(
+                            (doc) => doc.authorAddress !== user?.ethreumAddress,
+                          ).length
+                        }
                       </div>
                     </dd>
                   </dl>
@@ -358,12 +519,14 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        
+
         {/* Empty state when wallet not connected */}
         {!user?.ethreumAddress && (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <Wallet className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No wallet connected</h3>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">
+              No wallet connected
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
               Connect your MetaMask wallet to view and manage your documents
             </p>
@@ -379,7 +542,7 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-        
+
         {/* Loading state */}
         {loading && user?.ethreumAddress && (
           <div className="text-center py-12">
@@ -387,12 +550,14 @@ export default function Dashboard() {
             <p className="mt-2 text-gray-600">Loading documents...</p>
           </div>
         )}
-        
+
         {/* Empty state when no documents */}
         {!loading && user?.ethreumAddress && documents.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No documents yet</h3>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">
+              No documents yet
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
               Upload your first document to get started
             </p>
@@ -407,7 +572,7 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-        
+
         {/* Document content when documents exist */}
         {!loading && user?.ethreumAddress && documents.length > 0 && (
           <>
@@ -415,57 +580,72 @@ export default function Dashboard() {
             <div className="border-b border-gray-200 mb-6">
               <nav className="-mb-px flex space-x-8">
                 <button
-                  onClick={() => setActiveTab('recent')}
+                  onClick={() => setActiveTab("recent")}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'recent'
-                      ? 'border-black text-black'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    activeTab === "recent"
+                      ? "border-black text-black"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   Recent Documents
                 </button>
                 <button
-                  onClick={() => setActiveTab('shared')}
+                  onClick={() => setActiveTab("shared")}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'shared'
-                      ? 'border-black text-black'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    activeTab === "shared"
+                      ? "border-black text-black"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   Shared With Others
                 </button>
                 <button
-                  onClick={() => setActiveTab('activity')}
+                  onClick={() => setActiveTab("activity")}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'activity'
-                      ? 'border-black text-black'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    activeTab === "activity"
+                      ? "border-black text-black"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   Recent Activity
                 </button>
               </nav>
             </div>
-            
+
             {/* Documents table */}
-            {(activeTab === 'recent' || activeTab === 'shared') && (
+            {(activeTab === "recent" || activeTab === "shared") && (
               <div className="bg-white shadow overflow-hidden rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Name
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Status
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Shared With
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Last Modified
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Owner
                       </th>
                       <th scope="col" className="relative px-6 py-3">
@@ -475,9 +655,13 @@ export default function Dashboard() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {documents
-                      .filter(doc => {
-                        if (activeTab === 'recent') return true;
-                        if (activeTab === 'shared') return doc.authorAddress === user.ethreumAddress && doc.sharedWith > 0;
+                      .filter((doc) => {
+                        if (activeTab === "recent") return true;
+                        if (activeTab === "shared")
+                          return (
+                            doc.authorAddress === user.ethreumAddress &&
+                            doc.sharedWith > 0
+                          );
                         return false;
                       })
                       .map((doc) => (
@@ -488,8 +672,12 @@ export default function Dashboard() {
                                 {getFileIcon(doc.type)}
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">{doc.name}</div>
-                                <div className="text-sm text-gray-500">{doc.type} Document</div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {doc.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {doc.type} Document
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -504,21 +692,23 @@ export default function Dashboard() {
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-gray-500 text-sm">Not shared</span>
+                              <span className="text-gray-500 text-sm">
+                                Not shared
+                              </span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {doc.dateModified}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {doc.authorAddress === user.ethreumAddress 
-                              ? "You" 
+                            {doc.authorAddress === user.ethreumAddress
+                              ? "You"
                               : shortenAddress(doc.authorAddress)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex space-x-3 justify-end">
                               {doc.canView && (
-                                <a 
+                                <a
                                   href={`https://ipfs.io/ipfs/${doc.ipfsHash}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -529,7 +719,7 @@ export default function Dashboard() {
                                 </a>
                               )}
                               {doc.canView && (
-                                <a 
+                                <a
                                   href={`https://ipfs.io/ipfs/${doc.ipfsHash}?download=true`}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -539,7 +729,6 @@ export default function Dashboard() {
                                   <Download className="h-5 w-5" />
                                 </a>
                               )}
-                          
                             </div>
                           </td>
                         </tr>
@@ -548,9 +737,9 @@ export default function Dashboard() {
                 </table>
               </div>
             )}
-            
+
             {/* Activity feed */}
-            {activeTab === 'activity' && (
+            {activeTab === "activity" && (
               <div className="bg-white shadow overflow-hidden rounded-lg">
                 <ul className="divide-y divide-gray-200">
                   {recentActivity.length > 0 ? (
@@ -558,22 +747,22 @@ export default function Dashboard() {
                       <li key={activity.id} className="p-4 hover:bg-gray-50">
                         <div className="flex items-center space-x-4">
                           <div className="flex-shrink-0">
-                            {activity.action === 'View' && (
+                            {activity.action === "View" && (
                               <div className="p-2 rounded-full bg-blue-100">
                                 <Eye className="h-5 w-5 text-blue-500" />
                               </div>
                             )}
-                            {activity.action === 'Grant' && (
+                            {activity.action === "Grant" && (
                               <div className="p-2 rounded-full bg-green-100">
                                 <Users className="h-5 w-5 text-green-500" />
                               </div>
                             )}
-                            {activity.action === 'Upload' && (
+                            {activity.action === "Upload" && (
                               <div className="p-2 rounded-full bg-purple-100">
                                 <Upload className="h-5 w-5 text-purple-500" />
                               </div>
                             )}
-                            {activity.action === 'Verify' && (
+                            {activity.action === "Verify" && (
                               <div className="p-2 rounded-full bg-yellow-100">
                                 <Shield className="h-5 w-5 text-yellow-500" />
                               </div>
@@ -588,7 +777,9 @@ export default function Dashboard() {
                             </p>
                           </div>
                           <div className="flex-shrink-0">
-                            <span className="text-sm text-gray-500">{activity.time}</span>
+                            <span className="text-sm text-gray-500">
+                              {activity.time}
+                            </span>
                           </div>
                         </div>
                       </li>
@@ -604,9 +795,9 @@ export default function Dashboard() {
           </>
         )}
       </div>
-      
+
       {/* Upload Document Modal */}
-      <UploadDocumentModal 
+      <UploadDocumentModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onSuccess={handleDocumentUploaded}
